@@ -1,5 +1,6 @@
 import type { Db, Document as MongoDocument, Filter } from "mongodb";
 import type { FindOptions } from "./cursor";
+import { URLSearchParams } from "url";
 
 async function find(
   db: Db,
@@ -42,17 +43,36 @@ export default function makeRelay(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function expressRelay(req: Request, res: any) {
-    if (req.headers.get("Bearer") !== relayPassword)
-      return res.status(401).end("Unauthorized");
+    const headers =
+      req.headers instanceof Headers ? req.headers : new Headers(req.headers);
 
-    const url = new URL(req.url);
+    if (headers.get("bearer") !== relayPassword) {
+      res
+        .status(401)
+        .end(
+          "Unauthorized" + " " + headers.get("bearer") + " " + relayPassword,
+        );
+      return;
+    }
+
+    const paramString = req.url.substring(req.url.indexOf("?") + 1);
     const { op, coll, ...params } = Object.fromEntries(
-      url.searchParams.entries(),
+      new URLSearchParams(paramString),
     );
     let data: Record<string, string> | null = null;
     if (req.method === "POST") {
-      if (req.headers.get("content-type") === "application/json") {
-        data = await req.json();
+      if (headers.get("content-type") === "application/json") {
+        if ("json" in req) {
+          data = await req.json();
+        } else if (
+          // @ts-expect-error: ok
+          typeof req.body === "object"
+        ) {
+          // @ts-expect-error: ok
+          data = req.body;
+        } else {
+          throw new Error("Not sure how to parse POST body");
+        }
       }
     }
 
@@ -60,10 +80,12 @@ export default function makeRelay(
     if (op === "find") {
       const filter = data?.filter as unknown as Filter<MongoDocument>;
       const opts = (data?.opts as FindOptions) || {};
+      console.log("find", coll, filter, opts);
       result = await tryCatchResult(() => find(db, coll, filter, opts));
     } else {
       const collection = db.collection(coll);
       if (op in collection) {
+        console.log(op, coll, data);
         result = await tryCatchResult(() =>
           // @ts-expect-error: later
           collection[op](...data),

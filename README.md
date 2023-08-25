@@ -34,9 +34,10 @@ supported.
 import { MongoClient } from "mongodb";
 import makeExpressRelay from "mongodb-rest-relay/lib/express";
 
-const client = new MongoClient(process.env.MONGO_URL);
+const MONGO_URL = process.env.MONGO_URL || "mongodb://127.0.0.1";
+const client = new MongoClient(MONGO_URL);
 
-export default const handler = makeExpressRelay(client);
+export default makeExpressRelay((await client.connect()).db(/* dbName? */));
 ```
 
 3. Set the `MONGODB_RELAY_PASSWORD` environment variable to the same value
@@ -54,5 +55,6 @@ export default const handler = makeExpressRelay(client);
 
 ## TODO
 
+- [ ] ObjectID / Date support `:) - in next release!
 - [ ] Instead of sending MONGODB_RELAY_PASSWORD, just use it to sign requests.
 - [ ] Caching
