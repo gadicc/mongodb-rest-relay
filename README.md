@@ -16,7 +16,7 @@ elastic scaling).
 
 ## Quick Start
 
-Modify an existing **edge** function (or create one as usual):
+Modify an existing **edge** or serverless function (or create one as usual):
 
 ```diff
 - import { MongoClient } from "mongodb";
@@ -42,6 +42,9 @@ export default const handler = makeExpressRelay(client);
 ## Notes
 
 - Supported functionality:
+
   - `insertOne()`, `insertMany()`
   - `find()` - with `sort()`, `limit()`, `skip()`, `project()`.
   - `updateOne()`, `updateMany()`
+  - `deleteOne()`, `deleteMany()`
+  - Open an issue or submit a PR for more :)
