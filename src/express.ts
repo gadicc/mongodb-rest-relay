@@ -30,7 +30,7 @@ async function tryCatchResult(fn: () => unknown) {
           stack: error.stack,
         },
       };
-    else return { $error: JSON.stringify(error) };
+    else return { $error: JSON.parse(JSON.stringify(error)) };
   }
 }
 
@@ -64,7 +64,9 @@ export default function makeRelay(
     let data: Record<string, string> | null = null;
     if (req.method === "POST") {
       if (headers.get("content-type") === "application/oson") {
-        data = oson.parse(await req.text());
+        if ("text" in req) data = oson.parse(await req.text());
+        // @ts-expect-error: its a vercel thing... TODO... create
+        else data = oson.parse(req.body);
       }
     }
 
@@ -87,7 +89,8 @@ export default function makeRelay(
       }
     }
 
-    res.headers.set("Content-Type", "application/oson");
+    if ("setHeader" in res) res.setHeader("Content-Type", "application/oson");
+    else res.headers.set("Content-Type", "application/oson");
     res.end(oson.stringify(result));
   }
   return expressRelay;
