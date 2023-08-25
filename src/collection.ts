@@ -2,8 +2,11 @@ import type {
   Collection as MongoCollection,
   Document as MongoDocument,
   Filter,
+  FindOptions,
   WithId,
 } from "mongodb";
+import * as oson from "o-son";
+import "./oson-objectid";
 import RelayCursor from "./cursor";
 import type { RelayDb } from "./database";
 
@@ -27,14 +30,12 @@ function toError(jsonError: Record<string, string> | string) {
   return error;
 }
 
-function throwOrReturnAs<T extends (...args: any) => any>(
-  data: Record<string, unknown>,
-) {
-  if ("$result" in data) return data.$result as unknown as ReturnType<T>;
+function throwOrReturnAs<T>(data: Record<string, unknown>) {
+  if ("$result" in data) return data.$result as unknown as T;
   else throw toError(data.$error as Record<string, string> | string);
 }
 
-class RelayCollection<DocType extends MongoDocument = MongoDocument> {
+class RelayCollection<TSchema extends MongoDocument = MongoDocument> {
   db: RelayDb;
   name: string;
 
@@ -43,45 +44,65 @@ class RelayCollection<DocType extends MongoDocument = MongoDocument> {
     this.name = name;
   }
 
-  find(filter: Filter<DocType>) {
+  find(filter: Filter<TSchema>) {
     return new RelayCursor(this, filter);
   }
 
   createIndex() {}
 
-  async findOne(filter: Filter<DocType>) {
+  /**
+   * Fetches the first document that matches the filter
+   *
+   * @param filter - Query for find Operation
+   * @param options - Optional settings for the command
+   */
+  findOne(): Promise<WithId<TSchema> | null>;
+  findOne(filter: Filter<TSchema>): Promise<WithId<TSchema> | null>;
+  findOne(
+    filter: Filter<TSchema>,
+    options: FindOptions,
+  ): Promise<WithId<TSchema> | null>;
+  findOne<T = TSchema>(): Promise<T | null>;
+  findOne<T = TSchema>(filter: Filter<TSchema>): Promise<T | null>;
+  findOne<T = TSchema>(
+    filter: Filter<TSchema>,
+    options?: FindOptions,
+  ): Promise<T | null>;
+
+  async findOne(filter?: Filter<TSchema>): Promise<WithId<TSchema> | null> {
     const data = await this._exec("findOne", [filter]);
-    return throwOrReturnAs<MongoCollection["findOne"]>(data);
+    type x = ReturnType<MongoCollection<TSchema>["findOne"]>;
+    return throwOrReturnAs<WithId<TSchema> | null>(data);
   }
 
-  async insertOne(doc: DocType) {
+  async insertOne(doc: TSchema) {
     const data = await this._exec("insertOne", [doc]);
-    return throwOrReturnAs<MongoCollection["insertOne"]>(data);
+    return throwOrReturnAs<ReturnType<MongoCollection["insertOne"]>>(data);
   }
 
-  async insertMany(docs: DocType[]) {
+  async insertMany(docs: TSchema[]) {
     const data = await this._exec("insertMany", [docs]);
-    return throwOrReturnAs<MongoCollection["insertMany"]>(data);
+    return throwOrReturnAs<ReturnType<MongoCollection["insertMany"]>>(data);
   }
 
-  async updateOne(filter: Filter<DocType>, update: unknown) {
+  async updateOne(filter: Filter<TSchema>, update: unknown) {
     const data = await this._exec("updateOne", [filter, update]);
-    return throwOrReturnAs<MongoCollection["updateOne"]>(data);
+    return throwOrReturnAs<ReturnType<MongoCollection["updateOne"]>>(data);
   }
 
-  async updateMany(filter: Filter<DocType>, update: unknown) {
+  async updateMany(filter: Filter<TSchema>, update: unknown) {
     const data = await this._exec("updateMany", [filter, update]);
-    return throwOrReturnAs<MongoCollection["updateMany"]>(data);
+    return throwOrReturnAs<ReturnType<MongoCollection["updateMany"]>>(data);
   }
 
-  async deleteOne(filter: Filter<DocType>) {
+  async deleteOne(filter: Filter<TSchema>) {
     const data = await this._exec("deleteOne", [filter]);
-    return throwOrReturnAs<MongoCollection["deleteOne"]>(data);
+    return throwOrReturnAs<ReturnType<MongoCollection["deleteOne"]>>(data);
   }
 
-  async deleteMany(filter: Filter<DocType>) {
+  async deleteMany(filter: Filter<TSchema>) {
     const data = await this._exec("deleteMany", [filter]);
-    return throwOrReturnAs<MongoCollection["deleteMany"]>(data);
+    return throwOrReturnAs<ReturnType<MongoCollection["deleteMany"]>>(data);
   }
 
   async _exec(op: string, payload: unknown) {
@@ -98,14 +119,14 @@ class RelayCollection<DocType extends MongoDocument = MongoDocument> {
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/oson",
         Bearer: relayPassword,
       },
-      body: JSON.stringify(payload),
+      body: oson.stringify(payload),
     });
 
     if (response.status === 200)
-      return (await response.json()) as Record<string, unknown>;
+      return oson.parse(await response.text()) as Record<string, unknown>;
 
     const text = await response.text();
     throw new Error("HTTP " + response.status + ": " + text);

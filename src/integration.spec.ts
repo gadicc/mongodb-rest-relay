@@ -1,13 +1,13 @@
 import fetchMock, { enableFetchMocks } from "jest-fetch-mock";
 enableFetchMocks();
 
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import type { Db } from "mongodb";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
-import makeRelay from "../src/express";
-import RelayMongoClient from "../src/client";
-import type { RelayDb } from "../src/database";
+import makeRelay from "./express";
+import RelayMongoClient from "./client";
+import type { RelayDb } from "./database";
 
 process.env.MONGODB_RELAY_PASSWORD = "test";
 
@@ -110,10 +110,12 @@ describe("relay integration test", () => {
     result = await collection.insertMany([{ a: 1 }, { a: 2 }]);
     expect(result.acknowledged).toBe(true);
     expect(result.insertedCount).toBe(2);
-    expect(result.insertedIds).toMatchObject({
-      0: expect.stringMatching(/[A-Fa-f0-9]+/),
-      1: expect.stringMatching(/[A-Fa-f0-9]+/),
-    });
+    expect(typeof result.insertedIds).toBe("object");
+    expect(Object.keys(result.insertedIds).length).toBe(2);
+    expect(result.insertedIds[0]).toBeInstanceOf(ObjectId);
+    expect(result.insertedIds[1]).toBeInstanceOf(ObjectId);
+    expect(result.insertedIds[0].toHexString()).toMatch(/[A-Fa-f0-9]+/);
+    expect(result.insertedIds[1].toHexString()).toMatch(/[A-Fa-f0-9]+/);
 
     // { acknowledged: true, modifiedCount: 2, upsertedId: null, upsertedCount: 0, matchedCount: 2 }
     result = await collection.updateMany({}, { $set: { b: 3 } });
@@ -139,6 +141,24 @@ describe("relay integration test", () => {
     result = await collection.deleteMany({});
     expect(result.acknowledged).toBe(true);
     expect(result.deletedCount).toBe(2);
+  });
+
+  it("works with dates and object ids", async () => {
+    const collection = localDb.collection("test_arson");
+
+    const _id = new ObjectId("5f9c0b2b6c3b2e1d1c9d9b9b");
+    const date = new Date("2012-12-12");
+
+    await collection.insertOne({ _id, date });
+
+    // find by ObjectId
+    const result = await collection.findOne({ _id });
+    if (!result) throw new Error("result is null");
+
+    expect(result.date).toBeInstanceOf(Date);
+    expect(result.date.getTime()).toBe(date.getTime());
+    expect(result._id).toBeInstanceOf(ObjectId);
+    expect(result._id.toHexString()).toBe(_id.toHexString());
   });
 
   afterAll(async () => {

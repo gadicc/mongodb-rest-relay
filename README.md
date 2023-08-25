@@ -55,6 +55,6 @@ export default makeExpressRelay((await client.connect()).db(/* dbName? */));
 
 ## TODO
 
-- [ ] ObjectID / Date support `:) - in next release!
+- [x] ObjectID / Date support `:) - in next release!
 - [ ] Instead of sending MONGODB_RELAY_PASSWORD, just use it to sign requests.
 - [ ] Caching

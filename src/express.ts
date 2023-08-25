@@ -1,6 +1,8 @@
-import type { Db, Document as MongoDocument, Filter } from "mongodb";
-import type { FindOptions } from "./cursor";
 import { URLSearchParams } from "url";
+import type { Db, Document as MongoDocument, Filter } from "mongodb";
+import * as oson from "o-son";
+import "./oson-objectid";
+import type { FindOptions } from "./cursor";
 
 async function find(
   db: Db,
@@ -61,18 +63,8 @@ export default function makeRelay(
     );
     let data: Record<string, string> | null = null;
     if (req.method === "POST") {
-      if (headers.get("content-type") === "application/json") {
-        if ("json" in req) {
-          data = await req.json();
-        } else if (
-          // @ts-expect-error: ok
-          typeof req.body === "object"
-        ) {
-          // @ts-expect-error: ok
-          data = req.body;
-        } else {
-          throw new Error("Not sure how to parse POST body");
-        }
+      if (headers.get("content-type") === "application/oson") {
+        data = oson.parse(await req.text());
       }
     }
 
@@ -95,7 +87,8 @@ export default function makeRelay(
       }
     }
 
-    res.json(result);
+    res.headers.set("Content-Type", "application/oson");
+    res.end(oson.stringify(result));
   }
   return expressRelay;
 }

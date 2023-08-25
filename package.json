@@ -46,7 +46,8 @@
   },
   "prettier": {},
   "dependencies": {
-    "debug": "^4.3.4"
+    "debug": "^4.3.4",
+    "o-son": "1.0.2"
   },
   "release": {
     "branches": [
