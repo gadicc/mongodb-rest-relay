@@ -30,7 +30,7 @@ function toError(jsonError: Record<string, string> | string) {
 function throwOrReturnAs<T extends (...args: any) => any>(
   data: Record<string, unknown>,
 ) {
-  if (data.$result) return data.$result as unknown as ReturnType<T>;
+  if ("$result" in data) return data.$result as unknown as ReturnType<T>;
   else throw toError(data.$error as Record<string, string> | string);
 }
 
@@ -45,6 +45,13 @@ class RelayCollection<DocType extends MongoDocument = MongoDocument> {
 
   find(filter: Filter<DocType>) {
     return new RelayCursor(this, filter);
+  }
+
+  createIndex() {}
+
+  async findOne(filter: Filter<DocType>) {
+    const data = await this._exec("findOne", [filter]);
+    return throwOrReturnAs<MongoCollection["findOne"]>(data);
   }
 
   async insertOne(doc: DocType) {
@@ -92,7 +99,7 @@ class RelayCollection<DocType extends MongoDocument = MongoDocument> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Bearer: process.env.MONGODB_RELAY_PASSWORD as string,
+        Bearer: relayPassword,
       },
       body: JSON.stringify(payload),
     });
