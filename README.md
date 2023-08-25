@@ -21,14 +21,20 @@ elastic scaling).
 ```diff
 - import { MongoClient } from "mongodb";
 + import { MongoClient } from "mongodb-rest-relay"
+
+- const MONGO_URL = process.env.MONGO_URL;
++ const MONGO_URL = "http://localhost:3000/api/mongoRelay.ts"
+
+// Then use as usual.
+const client = new MongoClient(MONGO_URL);
 ```
 
 That's it! Since the API is the same, there's nothing else to do.
 Note: only basic functionality / simple CRUD operations are
-supported.
+supported (see notes at the end of the README).
 
 2. You can run the other side of the relay as **serverless**
-   or servered (near your database):
+   or servered (near your database), e.g. `api/mongoRelay.ts`:
 
 ```js
 import { MongoClient } from "mongodb";
