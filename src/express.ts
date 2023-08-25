@@ -31,9 +31,20 @@ async function tryCatchResult(fn: () => unknown) {
   }
 }
 
-export default function makeRelay(db: Db) {
+export default function makeRelay(
+  db: Db,
+  relayPassword = process.env.MONGODB_RELAY_PASSWORD,
+) {
+  if (!relayPassword)
+    throw new Error(
+      "Either makeRelay(db, relayPassword) or set MONGODB_RELAY_PASSWORD",
+    );
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function expressRelay(req: Request, res: any) {
+    if (req.headers.get("Bearer") !== relayPassword)
+      return res.status(401).end("Unauthorized");
+
     const url = new URL(req.url);
     const { op, coll, ...params } = Object.fromEntries(
       url.searchParams.entries(),

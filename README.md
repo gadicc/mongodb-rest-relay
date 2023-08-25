@@ -16,7 +16,7 @@ elastic scaling).
 
 ## Quick Start
 
-Modify an existing **edge** or serverless function (or create one as usual):
+1. Modify an existing **edge** or serverless function (or create one as usual):
 
 ```diff
 - import { MongoClient } from "mongodb";
@@ -27,8 +27,8 @@ That's it! Since the API is the same, there's nothing else to do.
 Note: only basic functionality / simple CRUD operations are
 supported.
 
-You can run the other side of the relay as **serverless**
-or servered (near your database):
+2. You can run the other side of the relay as **serverless**
+   or servered (near your database):
 
 ```js
 import { MongoClient } from "mongodb";
@@ -39,6 +39,9 @@ const client = new MongoClient(process.env.MONGO_URL);
 export default const handler = makeExpressRelay(client);
 ```
 
+3. Set the `MONGODB_RELAY_PASSWORD` environment variable to the same value
+   on both sides.
+
 ## Notes
 
 - Supported functionality:
@@ -48,3 +51,8 @@ export default const handler = makeExpressRelay(client);
   - `updateOne()`, `updateMany()`
   - `deleteOne()`, `deleteMany()`
   - Open an issue or submit a PR for more :)
+
+## TODO
+
+- [ ] Instead of sending MONGODB_RELAY_PASSWORD, just use it to sign requests.
+- [ ] Caching

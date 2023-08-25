@@ -9,6 +9,41 @@ import makeRelay from "../src/express";
 import RelayMongoClient from "../src/client";
 import type { RelayDb } from "../src/database";
 
+process.env.MONGODB_RELAY_PASSWORD = "test";
+
+class FakeRes {
+  body = "";
+  headers = new Headers();
+  statusCode = 200;
+  _resolve: (...args: any) => void;
+  _reject: (error: any) => void;
+
+  constructor(resolve: (...args: any) => void, reject: (error: any) => void) {
+    this._resolve = resolve;
+    this._reject = reject;
+  }
+
+  status(statusCode: number) {
+    this.statusCode = statusCode;
+    return this;
+  }
+
+  end(body?: string) {
+    if (body) this.body = body;
+    this._resolve(
+      new Response(this.body, {
+        status: this.statusCode,
+        headers: this.headers,
+      }),
+    );
+  }
+
+  json(data: Parameters<JSON["stringify"]>[0]) {
+    this.headers.set("Content-Type", "application/json");
+    this.end(JSON.stringify(data));
+  }
+}
+
 describe("relay integration test", () => {
   let localDb: RelayDb;
   let localClient: RelayMongoClient;
@@ -35,11 +70,7 @@ describe("relay integration test", () => {
       if (typeof req === "string") req = new Request(req, init);
 
       return new Promise((resolve, reject) => {
-        const res = {
-          json: (data: Parameters<JSON["stringify"]>[0]) => {
-            resolve(new Response(JSON.stringify(data)));
-          },
-        };
+        const res = new FakeRes(resolve, reject);
         try {
           express(req as Request, res);
         } catch (err) {

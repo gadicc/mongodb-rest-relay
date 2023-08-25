@@ -78,6 +78,10 @@ class RelayCollection<DocType extends MongoDocument = MongoDocument> {
   }
 
   async _exec(op: string, payload: unknown) {
+    const relayPassword = process.env.MONGODB_RELAY_PASSWORD;
+    if (relayPassword === undefined)
+      throw new Error("Set process.env.MONGODB_RELAY_PASSWORD first");
+
     const params = new URLSearchParams();
     // params.append("db", this.db._dbName || "");
     params.append("coll", this.name);
@@ -88,11 +92,16 @@ class RelayCollection<DocType extends MongoDocument = MongoDocument> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Bearer: process.env.MONGODB_RELAY_PASSWORD as string,
       },
       body: JSON.stringify(payload),
     });
 
-    return (await response.json()) as Record<string, unknown>;
+    if (response.status === 200)
+      return (await response.json()) as Record<string, unknown>;
+
+    const text = await response.text();
+    throw new Error("HTTP " + response.status + ": " + text);
   }
 }
 
