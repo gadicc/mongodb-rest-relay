@@ -9,22 +9,26 @@ Copyright (c) 2023 by Gadi Cohen. [MIT Licensed](./LICENSE.txt).
 ## Intro
 
 `mongodb-rest-relay` is meant to be a drop-in replacement for `mongodb`, that sends
-the actual request to the real `mongodb` elsewhere. It may be a better fit for edge
-and serverless, depending on your use case. You get the advantages of MongoDB own
-REST service but with the same fixed and predictable pricing (but no elastic scaling).
+the actual request to the real `mongodb` elsewhere over HTTP. It may be a better fit
+for edge and serverless, depending on your use case. You get the advantages of
+MongoDB's own REST service but with the same fixed and predictable pricing (but no
+elastic scaling).
 
 ## Quick Start
 
 Modify an existing **edge** function (or create one as usual):
 
 ```diff
-+ // That's it; the API is compatible (for *basic* functionality only)
 - import { MongoClient } from "mongodb";
 + import { MongoClient } from "mongodb-rest-relay"
 ```
 
-And you can run the other side of the relay as **serverless**
-(near your database):
+That's it! Since the API is the same, there's nothing else to do.
+Note: only basic functionality / simple CRUD operations are
+supported.
+
+You can run the other side of the relay as **serverless**
+or servered (near your database):
 
 ```js
 import { MongoClient } from "mongodb";
@@ -37,5 +41,7 @@ export default const handler = makeExpressRelay(client);
 
 ## Notes
 
-- Only basic CRUD functionality is provided, not aggregates or
-  other more complex features.
+- Supported functionality:
+  - `insertOne()`, `insertMany()`
+  - `find()` - with `sort()`, `limit()`, `skip()`, `project()`.
+  - `updateOne()`, `updateMany()`

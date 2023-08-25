@@ -8,13 +8,27 @@ async function find(
   opts: FindOptions,
 ) {
   const cursor = db.collection(coll).find(filter);
-  filter; //?
-  opts; //?
   if (opts.sort) cursor.sort(opts.sort.sort, opts.sort.direction);
   if (opts.limit) cursor.limit(opts.limit);
   if (opts.skip) cursor.skip(opts.skip);
   if (opts.project) cursor.project(opts.project);
   return await cursor.toArray();
+}
+
+async function tryCatchResult(fn: () => unknown) {
+  try {
+    return { $result: await fn() };
+  } catch (error) {
+    if (error instanceof Error)
+      return {
+        $error: {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        },
+      };
+    else return { $error: JSON.stringify(error) };
+  }
 }
 
 export default function makeRelay(db: Db) {
@@ -25,10 +39,7 @@ export default function makeRelay(db: Db) {
       url.searchParams.entries(),
     );
     let data: Record<string, string> | null = null;
-    req.method; //?
-    req.headers.get("content-type"); //?
     if (req.method === "POST") {
-      req.headers.get("content-type"); //?
       if (req.headers.get("content-type") === "application/json") {
         data = await req.json();
       }
@@ -38,38 +49,16 @@ export default function makeRelay(db: Db) {
     if (op === "find") {
       const filter = data?.filter as unknown as Filter<MongoDocument>;
       const opts = (data?.opts as FindOptions) || {};
-      try {
-        result = { $result: await find(db, coll, filter, opts) };
-      } catch (error) {
-        if (error instanceof Error)
-          result = {
-            $error: {
-              name: error.name,
-              message: error.message,
-              stack: error.stack,
-            },
-          };
-        else result = { $error: JSON.stringify(error) };
-      }
+      result = await tryCatchResult(() => find(db, coll, filter, opts));
     } else {
       const collection = db.collection(coll);
       if (op in collection) {
-        try {
+        result = await tryCatchResult(() =>
           // @ts-expect-error: later
-          result = { $result: await collection[op]({ ...data, ...params }) };
-        } catch (error) {
-          if (error instanceof Error)
-            result = {
-              $error: {
-                name: error.name,
-                message: error.message,
-                stack: error.stack,
-              },
-            };
-          else result = { $error: JSON.stringify(error) };
-        }
+          collection[op](...data),
+        );
       } else {
-        result = { $error: `Unknown operation: ${op}` };
+        result = { $error: `Unknown mongodb-relay-rest operation: ${op}` };
       }
     }
 

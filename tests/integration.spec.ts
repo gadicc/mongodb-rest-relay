@@ -60,9 +60,54 @@ describe("relay integration test", () => {
     result = await collection.insertOne({ a: 1 });
     expect(result.acknowledged).toBe(true);
 
-    result = await collection.find({}).toArray();
+    result = await collection
+      .find({})
+      .sort("a", "asc")
+      .limit(1)
+      .skip(0)
+      .project({ a: 1 })
+      .toArray();
     expect(result.length).toBe(1);
     expect(result[0].a).toBe(1);
+  });
+
+  it("other tests", async () => {
+    let result;
+    const collection = localDb.collection("test_many");
+
+    // { acknowledged: true, insertedCount: 2, insertedIds: { 0: 'id1', 1: 'id2' } }
+    result = await collection.insertMany([{ a: 1 }, { a: 2 }]);
+    expect(result.acknowledged).toBe(true);
+    expect(result.insertedCount).toBe(2);
+    expect(result.insertedIds).toMatchObject({
+      0: expect.stringMatching(/[A-Fa-f0-9]+/),
+      1: expect.stringMatching(/[A-Fa-f0-9]+/),
+    });
+
+    // { acknowledged: true, modifiedCount: 2, upsertedId: null, upsertedCount: 0, matchedCount: 2 }
+    result = await collection.updateMany({}, { $set: { b: 3 } });
+    expect(result.acknowledged).toBe(true);
+    expect(result.modifiedCount).toBe(2);
+    expect(result.upsertedId).toBe(null);
+    expect(result.upsertedCount).toBe(0);
+    expect(result.matchedCount).toBe(2);
+
+    // { acknowledged: true, modifiedCount: 1, upsertedId: null, upsertedCount: 0, matchedCount: 1 }
+    result = await collection.updateOne({ a: 1 }, { $set: { a: 4 } });
+    expect(result.acknowledged).toBe(true);
+    expect(result.modifiedCount).toBe(1);
+    expect(result.upsertedId).toBe(null);
+    expect(result.upsertedCount).toBe(0);
+    expect(result.matchedCount).toBe(1);
+
+    result = await collection.deleteOne({ noMatch: true });
+    expect(result.acknowledged).toBe(true);
+    expect(result.deletedCount).toBe(0);
+
+    // { acknowledged: true, deletedCount: 2 }
+    result = await collection.deleteMany({});
+    expect(result.acknowledged).toBe(true);
+    expect(result.deletedCount).toBe(2);
   });
 
   afterAll(async () => {
