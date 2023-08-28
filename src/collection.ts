@@ -5,8 +5,7 @@ import type {
   FindOptions,
   WithId,
 } from "mongodb";
-import * as oson from "o-son";
-import "./oson-objectid";
+import { EJSON } from "bson";
 import RelayCursor from "./cursor";
 import type { RelayDb } from "./database";
 
@@ -119,14 +118,16 @@ class RelayCollection<TSchema extends MongoDocument = MongoDocument> {
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        "Content-Type": "application/oson",
+        "Content-Type": "application/json",
         Bearer: relayPassword,
       },
-      body: oson.stringify(payload),
+      body: EJSON.stringify(payload),
     });
 
-    if (response.status === 200)
-      return oson.parse(await response.text()) as Record<string, unknown>;
+    if (response.status === 200) {
+      const text = await response.text();
+      return EJSON.parse(text) as Record<string, unknown>;
+    }
 
     const text = await response.text();
     throw new Error("HTTP " + response.status + ": " + text);

@@ -1,8 +1,7 @@
 import { URLSearchParams } from "url";
 import type { Db, Document as MongoDocument, Filter } from "mongodb";
-import * as oson from "o-son";
-import "./oson-objectid";
 import type { FindOptions } from "./cursor";
+import { EJSON } from "bson";
 
 async function find(
   db: Db,
@@ -63,10 +62,12 @@ export default function makeRelay(
     );
     let data: Record<string, string> | null = null;
     if (req.method === "POST") {
-      if (headers.get("content-type") === "application/oson") {
-        if ("text" in req) data = oson.parse(await req.text());
-        // @ts-expect-error: its a vercel thing... TODO... create
-        else data = oson.parse(req.body);
+      if (headers.get("content-type") === "application/json") {
+        if ("text" in req) data = EJSON.parse(await req.text());
+        else {
+          // @ts-expect-error: its a vercel thing... TODO... create
+          data = EJSON.deserialize(req.body);
+        }
       }
     }
 
@@ -89,9 +90,9 @@ export default function makeRelay(
       }
     }
 
-    if ("setHeader" in res) res.setHeader("Content-Type", "application/oson");
-    else res.headers.set("Content-Type", "application/oson");
-    res.end(oson.stringify(result));
+    if ("setHeader" in res) res.setHeader("Content-Type", "application/json");
+    else res.headers.set("Content-Type", "application/json");
+    res.end(EJSON.stringify(result));
   }
   return expressRelay;
 }
