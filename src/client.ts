@@ -9,7 +9,7 @@ class RelayMongoClient {
 
   connect(callback?: (err: Error | null) => void) {
     if (callback) callback(null);
-    else return Promise.resolve();
+    else return Promise.resolve(this);
   }
 
   db(name: string) {
