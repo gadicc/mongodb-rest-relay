@@ -103,7 +103,11 @@ class RelayCollection<TSchema extends Document = Document> {
     return throwOrReturnAs<number>(data);
   }
 
-  createIndex() {}
+  createIndex() {
+    console.warn(
+      "createIndex() not implemented yet... your code won't crash but no index will be created",
+    );
+  }
 
   /**
    * Fetches the first document that matches the filter
