@@ -1,6 +1,8 @@
 import type {
   Collection as MongoCollection,
-  Document as MongoDocument,
+  CountDocumentsOptions,
+  Document,
+  EstimatedDocumentCountOptions,
   Filter,
   FindOptions,
   WithId,
@@ -34,7 +36,7 @@ function throwOrReturnAs<T>(data: Record<string, unknown>) {
   else throw toError(data.$error as Record<string, string> | string);
 }
 
-class RelayCollection<TSchema extends MongoDocument = MongoDocument> {
+class RelayCollection<TSchema extends Document = Document> {
   db: RelayDb;
   name: string;
 
@@ -45,6 +47,60 @@ class RelayCollection<TSchema extends MongoDocument = MongoDocument> {
 
   find(filter: Filter<TSchema>) {
     return new RelayCursor(this, filter);
+  }
+
+  /**
+   * Gets an estimate of the count of documents in a collection using collection metadata.
+   * This will always run a count command on all server versions.
+   *
+   * due to an oversight in versions 5.0.0-5.0.8 of MongoDB, the count command,
+   * which estimatedDocumentCount uses in its implementation, was not included in v1 of
+   * the Stable API, and so users of the Stable API with estimatedDocumentCount are
+   * recommended to upgrade their server version to 5.0.9+ or set apiStrict: false to avoid
+   * encountering errors.
+   *
+   * @see {@link https://www.mongodb.com/docs/manual/reference/command/count/#behavior|Count: Behavior}
+   * @param options - Optional settings for the command
+   */
+  async estimatedDocumentCount(
+    options?: EstimatedDocumentCountOptions,
+  ): Promise<number> {
+    const data = await this._exec("estimatedDocumentCount", [options || {}]);
+    return throwOrReturnAs<number>(data);
+  }
+
+  /**
+   * Gets the number of documents matching the filter.
+   * For a fast count of the total documents in a collection see {@link Collection#estimatedDocumentCount| estimatedDocumentCount}.
+   * **Note**: When migrating from {@link Collection#count| count} to {@link Collection#countDocuments| countDocuments}
+   * the following query operators must be replaced:
+   *
+   * | Operator | Replacement |
+   * | -------- | ----------- |
+   * | `$where`   | [`$expr`][1] |
+   * | `$near`    | [`$geoWithin`][2] with [`$center`][3] |
+   * | `$nearSphere` | [`$geoWithin`][2] with [`$centerSphere`][4] |
+   *
+   * [1]: https://www.mongodb.com/docs/manual/reference/operator/query/expr/
+   * [2]: https://www.mongodb.com/docs/manual/reference/operator/query/geoWithin/
+   * [3]: https://www.mongodb.com/docs/manual/reference/operator/query/center/#op._S_center
+   * [4]: https://www.mongodb.com/docs/manual/reference/operator/query/centerSphere/#op._S_centerSphere
+   *
+   * @param filter - The filter for the count
+   * @param options - Optional settings for the command
+   *
+   * @see https://www.mongodb.com/docs/manual/reference/operator/query/expr/
+   * @see https://www.mongodb.com/docs/manual/reference/operator/query/geoWithin/
+   * @see https://www.mongodb.com/docs/manual/reference/operator/query/center/#op._S_center
+   * @see https://www.mongodb.com/docs/manual/reference/operator/query/centerSphere/#op._S_centerSphere
+   */
+  async countDocuments(
+    filter?: Document,
+    opts?: CountDocumentsOptions,
+  ): Promise<number> {
+    const data = await this._exec("countDocuments", [filter || {}, opts || {}]);
+    console.log("cdd", data);
+    return throwOrReturnAs<number>(data);
   }
 
   createIndex() {}

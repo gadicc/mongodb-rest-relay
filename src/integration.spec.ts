@@ -102,6 +102,17 @@ describe("relay integration test", () => {
     expect(result[0].a).toBe(1);
   });
 
+  it("countDocuments, estimatedDocumentCount", async () => {
+    let result;
+    const collection = localDb.collection("countDocuments");
+
+    expect(await collection.countDocuments()).toEqual(0);
+    expect(await collection.estimatedDocumentCount()).toEqual(0);
+    await collection.insertOne({ a: 1 });
+    expect(await collection.countDocuments()).toEqual(1);
+    expect(await collection.estimatedDocumentCount()).toEqual(1);
+  });
+
   it("other tests", async () => {
     let result;
     const collection = localDb.collection("test_many");
