@@ -1,10 +1,10 @@
 import type {
   Filter,
-  WithId,
+  Document,
   Collection as MongoCollection,
   Sort,
   SortDirection,
-  Document as MongoDocument,
+  WithId,
 } from "mongodb";
 
 import type { RelayCollection } from "./collection";
@@ -17,18 +17,16 @@ export interface FindOptions {
   project?: RelayCursor["_project"];
 }
 
-export default class RelayCursor<
-  DocType extends MongoDocument = MongoDocument,
-> {
+export default class RelayCursor<DocType extends Document = Document> {
   db: RelayDb;
-  coll: RelayCollection<DocType>;
-  filter: Filter<DocType>;
+  coll: RelayCollection<any>;
+  filter: Document;
   _limit: number | null = null;
   _sort: { sort: Sort; direction?: SortDirection } | null = null;
   _skip: number | null = null;
-  _project: MongoDocument | null = null;
+  _project: Document | null = null;
 
-  constructor(coll: RelayCollection<DocType>, filter: Filter<DocType>) {
+  constructor(coll: RelayCollection<any>, filter: Document) {
     this.db = coll.db;
     this.coll = coll;
     this.filter = filter;
@@ -49,7 +47,7 @@ export default class RelayCursor<
     return this;
   }
 
-  project<T extends MongoDocument>(value: MongoDocument) {
+  project<T extends Document>(value: Document) {
     this._project = value;
     return this as unknown as RelayCursor<T>;
   }
@@ -66,7 +64,7 @@ export default class RelayCursor<
 
     const data = await this.coll._exec("find", payload);
 
-    if (data.$result) return data.$result as WithId<MongoDocument>[];
+    if (data.$result) return data.$result as WithId<Document>[];
     else throw new Error("TODO");
   }
 }

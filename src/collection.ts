@@ -6,6 +6,7 @@ import type {
   Filter,
   FindOptions,
   WithId,
+  FindCursor,
 } from "mongodb";
 import { EJSON } from "bson";
 import RelayCursor from "./cursor";
@@ -36,6 +37,32 @@ function throwOrReturnAs<T>(data: Record<string, unknown>) {
   else throw toError(data.$error as Record<string, string> | string);
 }
 
+/**
+ * The **Collection** class is an internal class that embodies a MongoDB collection
+ * allowing for insert/find/update/delete and other command operation on that MongoDB collection.
+ *
+ * **COLLECTION Cannot directly be instantiated**
+ * @public
+ *
+ * @example
+ * ```ts
+ * import { MongoClient } from 'mongodb';
+ *
+ * interface Pet {
+ *   name: string;
+ *   kind: 'dog' | 'cat' | 'fish';
+ * }
+ *
+ * const client = new MongoClient('mongodb://localhost:27017');
+ * const pets = client.db().collection<Pet>('pets');
+ *
+ * const petCursor = pets.find();
+ *
+ * for await (const pet of petCursor) {
+ *   console.log(`${pet.name} is a ${pet.kind}!`);
+ * }
+ * ```
+ */
 class RelayCollection<TSchema extends Document = Document> {
   db: RelayDb;
   name: string;
@@ -45,8 +72,24 @@ class RelayCollection<TSchema extends Document = Document> {
     this.name = name;
   }
 
-  find(filter: Filter<TSchema>) {
-    return new RelayCursor(this, filter);
+  /**
+   * Creates a cursor for a filter that can be used to iterate over results from MongoDB
+   *
+   * @param filter - The filter predicate. If unspecified, then all documents in the collection will match the predicate
+   */
+  find(): RelayCursor<WithId<TSchema>>;
+  find(
+    filter: Filter<TSchema>,
+    options?: FindOptions,
+  ): RelayCursor<WithId<TSchema>>;
+  find<T extends Document>(
+    filter: Filter<TSchema>,
+    options?: FindOptions,
+  ): RelayCursor<T>;
+  find(filter?: Filter<TSchema>, opts?: FindOptions) {
+    if (opts)
+      throw new Error("find(filter, OPTIONS) - OPTIONS not implemented yet");
+    return new RelayCursor<WithId<TSchema>>(this, filter || {});
   }
 
   /**
@@ -127,38 +170,79 @@ class RelayCollection<TSchema extends Document = Document> {
     filter: Filter<TSchema>,
     options?: FindOptions,
   ): Promise<T | null>;
-
   async findOne(filter?: Filter<TSchema>): Promise<WithId<TSchema> | null> {
     const data = await this._exec("findOne", [filter]);
     type x = ReturnType<MongoCollection<TSchema>["findOne"]>;
     return throwOrReturnAs<WithId<TSchema> | null>(data);
   }
 
+  /**
+   * Inserts a single document into MongoDB. If documents passed in do not contain the **_id** field,
+   * one will be added to each of the documents missing it by the driver, mutating the document. This behavior
+   * can be overridden by setting the **forceServerObjectId** flag.
+   *
+   * @param doc - The document to insert
+   * @param options - Optional settings for the command
+   */
   async insertOne(doc: TSchema) {
     const data = await this._exec("insertOne", [doc]);
     return throwOrReturnAs<ReturnType<MongoCollection["insertOne"]>>(data);
   }
 
+  /**
+   * Inserts an array of documents into MongoDB. If documents passed in do not contain the **_id** field,
+   * one will be added to each of the documents missing it by the driver, mutating the document. This behavior
+   * can be overridden by setting the **forceServerObjectId** flag.
+   *
+   * @param docs - The documents to insert
+   * @param options - Optional settings for the command
+   */
   async insertMany(docs: TSchema[]) {
     const data = await this._exec("insertMany", [docs]);
     return throwOrReturnAs<ReturnType<MongoCollection["insertMany"]>>(data);
   }
 
+  /**
+   * Update a single document in a collection
+   *
+   * @param filter - The filter used to select the document to update
+   * @param update - The update operations to be applied to the document
+   * @param options - Optional settings for the command
+   */
   async updateOne(filter: Filter<TSchema>, update: unknown) {
     const data = await this._exec("updateOne", [filter, update]);
     return throwOrReturnAs<ReturnType<MongoCollection["updateOne"]>>(data);
   }
 
+  /**
+   * Update multiple documents in a collection
+   *
+   * @param filter - The filter used to select the documents to update
+   * @param update - The update operations to be applied to the documents
+   * @param options - Optional settings for the command
+   */
   async updateMany(filter: Filter<TSchema>, update: unknown) {
     const data = await this._exec("updateMany", [filter, update]);
     return throwOrReturnAs<ReturnType<MongoCollection["updateMany"]>>(data);
   }
 
+  /**
+   * Delete a document from a collection
+   *
+   * @param filter - The filter used to select the document to remove
+   * @param options - Optional settings for the command
+   */
   async deleteOne(filter: Filter<TSchema>) {
     const data = await this._exec("deleteOne", [filter]);
     return throwOrReturnAs<ReturnType<MongoCollection["deleteOne"]>>(data);
   }
 
+  /**
+   * Delete multiple documents from a collection
+   *
+   * @param filter - The filter used to select the documents to remove
+   * @param options - Optional settings for the command
+   */
   async deleteMany(filter: Filter<TSchema>) {
     const data = await this._exec("deleteMany", [filter]);
     return throwOrReturnAs<ReturnType<MongoCollection["deleteMany"]>>(data);
