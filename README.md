@@ -24,6 +24,8 @@ elastic scaling).
 
 - const MONGO_URL = process.env.MONGO_URL;
 + const MONGO_URL = "http://localhost:3000/api/mongoRelay.ts"
++
++ export const runtime = 'edge' // if relevant (e.g. on Vercel)
 
 // Then use as usual.
 const client = new MongoClient(MONGO_URL);
