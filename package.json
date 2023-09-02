@@ -19,7 +19,14 @@
     "url": "git+https://github.com/gadicc/mongodb-rest-relay.git"
   },
   "keywords": [
-    "discourse"
+    "mongodb",
+    "edge",
+    "serverless",
+    "database",
+    "rest",
+    "http",
+    "vercel",
+    "nextjs"
   ],
   "author": "Gadi Cohen <dragon@wastelands.net>",
   "license": "MIT",
