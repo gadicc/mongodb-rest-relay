@@ -66,6 +66,7 @@ function throwOrReturnAs<T>(data: Record<string, unknown>) {
 class RelayCollection<TSchema extends Document = Document> {
   db: RelayDb;
   name: string;
+  _cacheable = ["find", "findOne", "estimatedDocumentCount", "countDocuments"];
 
   constructor(db: RelayDb, name: string) {
     this.db = db;
@@ -259,7 +260,7 @@ class RelayCollection<TSchema extends Document = Document> {
     params.append("op", op);
 
     const url = this.db._client._url + "?" + params;
-    const response = await fetch(url, {
+    const requestInit: RequestInit = {
       ...this.db._client._options.fetch,
       method: "POST",
       headers: {
@@ -268,7 +269,10 @@ class RelayCollection<TSchema extends Document = Document> {
         Bearer: relayPassword,
       },
       body: EJSON.stringify(payload),
-    });
+    };
+    if (!this._cacheable.includes(op)) requestInit.cache = "no-store";
+
+    const response = await fetch(url, requestInit);
 
     if (response.status === 200) {
       const text = await response.text();

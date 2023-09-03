@@ -124,6 +124,11 @@ The result is that even in `next dev` you'll get output like this:
    └── 1 level ── POST http://localhost:3000/api/mongoRelay?coll=likes&op=f.. 200 in 1ms (cache: HIT)
 ```
 
+Note:
+
+1. Mutations (insert, update, delete, etc) will _always_ set `{ cache: "no-store" }`.
+   So caching is only applied to: `find()`, `findOne()`, `estimatedDocumentCount()`, `countDocuments()`.
+
 ## TODO
 
 - [x] ObjectID / Date support `:) - in next release!
