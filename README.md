@@ -35,8 +35,10 @@ That's it! Since the API is the same, there's nothing else to do.
 Note: only basic functionality / simple CRUD operations are
 supported (see notes at the end of the README).
 
+**See also the section on [Caching](#caching) below**.
+
 2. You can run the other side of the relay as **serverless**
-   or servered (near your database), e.g. `api/mongoRelay.ts`:
+   or servered (near your database), e.g. `pages/api/mongoRelay.ts`:
 
 ```js
 import { MongoClient } from "mongodb";
@@ -62,8 +64,70 @@ export default makeExpressRelay((await client.connect()).db(/* dbName? */));
   - `countDocuments()`, `estimatedDocumentCount()`
   - Open an issue or submit a PR for more :)
 
+## Init Options
+
+```ts
+new MongoClient(url, {
+  fetch: {}, // Additional options to past to ALL fetch requests (RequestInit)
+});
+```
+
+## Caching
+
+`mongodb-rest-relay` can take advantage of the
+[NextJS Cache](https://nextjs.org/docs/app/building-your-application/caching)
+and
+[Vercel's Data Cache](https://vercel.com/docs/infrastructure/data-cache)
+for significantly faster repeat results and lower load on your database.
+You should read these docs for a full picture but the basics are (for NextJS):
+
+1. You need to call `mongodb-rest-relay` from within the `app` router,
+   the functionality does not exist in `pages`. So instead of e.g.
+   `pages/api/something.ts`, you want `app/api/something/route.ts`, with
+   the necessary changes.
+
+2. You can set your GLOBAL cache policy for ALL (internal) `fetch()`
+   requests, using:
+
+   ```ts
+   new MongoClient(url, {
+     fetch: {
+       next: {
+         revalidate: 1, // revalidate after this amount of time (in seconds)
+         tags: ["myTag"], // can use revalidateTag("myTag") later.
+       },
+       // or
+       cache: "force-cache", // this lasts a long time, probably you don't want it :)
+     },
+   });
+   ```
+
+   Note: after `revalidate` seconds, the stale cache is still returned, and
+   fresh data will be fetched in the background. For more info, see
+   [NextJS time-based revalidation](https://nextjs.org/docs/app/building-your-application/caching#time-based-revalidation).
+
+3. Granular cache policy PER REQUEST is coming next.
+
+The result is that even in `next dev` you'll get output like this:
+
+```bash
+-  ┌ POST /api/something 200 in 148ms
+   │
+   ├──── POST http://localhost:3000/api/mongoRelay?coll=accounts&o.. 200 in 6ms (cache: HIT)
+   │
+   ├──── POST http://localhost:3000/api/mongoRelay?coll=stars&op=f.. 200 in 3ms (cache: HIT)
+   │
+   ├──── POST http://localhost:3000/api/mongoRelay?coll=sessions&o.. 200 in 2ms (cache: HIT)
+   │
+   ├── 1 level ── POST http://localhost:3000/api/mongoRelay?coll=users&op=f.. 200 in 1ms (cache: HIT)
+   │
+   └── 1 level ── POST http://localhost:3000/api/mongoRelay?coll=likes&op=f.. 200 in 1ms (cache: HIT)
+```
+
 ## TODO
 
 - [x] ObjectID / Date support `:) - in next release!
 - [ ] Instead of sending MONGODB_RELAY_PASSWORD, just use it to sign requests.
 - [ ] Caching
+  - [x] Global options
+  - [ ] Per-request options

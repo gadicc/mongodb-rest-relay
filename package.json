@@ -26,7 +26,10 @@
     "rest",
     "http",
     "vercel",
-    "nextjs"
+    "nextjs",
+    "next",
+    "cache",
+    "relay"
   ],
   "author": "Gadi Cohen <dragon@wastelands.net>",
   "license": "MIT",

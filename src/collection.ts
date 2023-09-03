@@ -260,8 +260,10 @@ class RelayCollection<TSchema extends Document = Document> {
 
     const url = this.db._client._url + "?" + params;
     const response = await fetch(url, {
+      ...this.db._client._options.fetch,
       method: "POST",
       headers: {
+        ...this.db._client._options.fetch?.headers,
         "Content-Type": "application/json",
         Bearer: relayPassword,
       },

@@ -1,10 +1,16 @@
 import RelayDb from "./database";
 
+interface RelayMongoClientOptions {
+  fetch?: RequestInit;
+}
+
 class RelayMongoClient {
   _url: string;
+  _options: RelayMongoClientOptions;
 
-  constructor(url: string) {
+  constructor(url: string, options: RelayMongoClientOptions = {}) {
     this._url = url;
+    this._options = options;
   }
 
   connect(callback?: (err: Error | null) => void) {
