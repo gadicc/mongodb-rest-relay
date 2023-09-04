@@ -11,6 +11,7 @@ import type {
 import { EJSON } from "bson";
 import RelayCursor from "./cursor";
 import type { RelayDb } from "./database";
+import { shiftOptionsOnce } from "./setOptions";
 
 function toError(jsonError: Record<string, string> | string) {
   let error: Error;
@@ -250,6 +251,8 @@ class RelayCollection<TSchema extends Document = Document> {
   }
 
   async _exec(op: string, payload: unknown) {
+    const nextOptions = shiftOptionsOnce();
+
     const relayPassword = process.env.MONGODB_RELAY_PASSWORD;
     if (relayPassword === undefined)
       throw new Error("Set process.env.MONGODB_RELAY_PASSWORD first");
@@ -262,9 +265,11 @@ class RelayCollection<TSchema extends Document = Document> {
     const url = this.db._client._url + "?" + params;
     const requestInit: RequestInit = {
       ...this.db._client._options.fetch,
+      ...nextOptions?.fetch,
       method: "POST",
       headers: {
         ...this.db._client._options.fetch?.headers,
+        ...nextOptions?.fetch?.headers,
         "Content-Type": "application/json",
         Bearer: relayPassword,
       },

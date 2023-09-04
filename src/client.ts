@@ -1,6 +1,6 @@
 import RelayDb from "./database";
 
-interface RelayMongoClientOptions {
+export interface RelayMongoClientOptions {
   fetch?: RequestInit;
 }
 

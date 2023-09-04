@@ -106,7 +106,22 @@ You should read these docs for a full picture but the basics are (for NextJS):
    fresh data will be fetched in the background. For more info, see
    [NextJS time-based revalidation](https://nextjs.org/docs/app/building-your-application/caching#time-based-revalidation).
 
-3. Granular cache policy PER REQUEST is coming next.
+3. You can also set these options PER REQUEST. This involves a separate API
+   call, so that you can still switch back between the original `mongodb`
+   driver without polluting the real mongo options or failing type validation.
+
+   ```diff
+   - import { MongoClient } from "mongodb";
+   + import { MongoClient, setOptionsOnce } from "mongodb-rest-relay";
+
+   // ... setup the client, etc.
+
+   + setOptionsOnce({ fetch: { next: { revalidate: 1 } } });
+   const result = await db.collection("test").find().toArray();
+   ```
+
+   You can call `setOptionsOnce()` multiple times and the options will be
+   used in that order (think of Jest's `mockImplementationOnce()`).
 
 The result is that even in `next dev` you'll get output like this:
 
@@ -133,6 +148,6 @@ Note:
 
 - [x] ObjectID / Date support `:) - in next release!
 - [ ] Instead of sending MONGODB_RELAY_PASSWORD, just use it to sign requests.
-- [ ] Caching
+- [x] Caching
   - [x] Global options
-  - [ ] Per-request options
+  - [x] Per-request options
