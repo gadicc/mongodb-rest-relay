@@ -25,6 +25,10 @@ elastic scaling).
 - const MONGO_URL = process.env.MONGO_URL;
 + const MONGO_URL = "http://localhost:3000/api/mongoRelay.ts"
 +
++ // Optional: only if Mongo's ObjectId doesn't work in your edge environment.
+- import { ObjectId } from "mongodb" // "bson"
++ import { ObjectId } from "mongodb-rest-relay/lib/bson"
++
 + export const runtime = 'edge' // if relevant (e.g. on Vercel)
 
 // Then use as usual.
