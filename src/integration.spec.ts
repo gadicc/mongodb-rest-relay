@@ -1,3 +1,6 @@
+// @ts-expect-error: ok
+global.RealResponse = global.Response;
+
 import fetchMock, { enableFetchMocks } from "jest-fetch-mock";
 enableFetchMocks();
 
@@ -6,8 +9,10 @@ import type { Db } from "mongodb";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 import makeRelay from "./express";
+import { processDbRequest } from "./server/common";
 import RelayMongoClient from "./client";
 import type { RelayDb } from "./database";
+import { Duplex } from "stream";
 
 process.env.MONGODB_RELAY_PASSWORD = "test";
 
@@ -15,6 +20,7 @@ class FakeRes {
   body = "";
   headers = new Headers();
   statusCode = 200;
+  defaultEncoding = "utf-8";
   _resolve: (...args: any) => void;
   _reject: (error: any) => void;
 
@@ -23,13 +29,21 @@ class FakeRes {
     this._reject = reject;
   }
 
+  writeHead(statusCode: number, headers: Headers) {
+    this.statusCode = statusCode;
+    this.headers = new Headers(headers);
+  }
+
   status(statusCode: number) {
     this.statusCode = statusCode;
     return this;
   }
 
-  end(body?: string) {
-    if (body) this.body = body;
+  end(bodyOrResponse?: string | Response) {
+    if (bodyOrResponse instanceof Response)
+      return this._resolve(bodyOrResponse);
+
+    if (bodyOrResponse) this.body = bodyOrResponse;
     this._resolve(
       new Response(this.body, {
         status: this.statusCode,
@@ -68,6 +82,17 @@ describe("relay integration test", () => {
       if (!req)
         throw new Error("fetchMock needs to be called with a request object");
       if (typeof req === "string") req = new Request(req, init);
+
+      if (req.url.match(/findStream/)) {
+        return processDbRequest(remoteDb, req).then((response) => {
+          // @ts-expect-error: ok
+          if (!(response instanceof global.RealResponse))
+            throw new Error(
+              "Expected a Response but got: " + JSON.stringify(response),
+            );
+          return response;
+        });
+      }
 
       return new Promise((resolve, reject) => {
         const res = new FakeRes(resolve, reject);
@@ -170,6 +195,20 @@ describe("relay integration test", () => {
     expect(result.date.getTime()).toBe(date.getTime());
     expect(result._id).toBeInstanceOf(ObjectId);
     expect(result._id.toHexString()).toBe(_id.toHexString());
+  });
+
+  describe("streaming", () => {
+    it("works", async () => {
+      const collection = localDb.collection("test_streaming");
+      await collection.insertMany([{ a: 1 }, { a: 2 }, { a: 3 }]);
+
+      const cursor = collection.find({});
+      const stream = collection.find({}).stream();
+      for await (const doc of stream) {
+        expect(doc._id).toBeInstanceOf(ObjectId);
+        expect(typeof doc.a).toBe("number");
+      }
+    });
   });
 
   afterAll(async () => {

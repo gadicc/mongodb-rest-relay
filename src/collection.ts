@@ -250,7 +250,17 @@ class RelayCollection<TSchema extends Document = Document> {
     return throwOrReturnAs<ReturnType<MongoCollection["deleteMany"]>>(data);
   }
 
-  async _exec(op: string, payload: unknown) {
+  async _exec(
+    op: string,
+    payload: unknown,
+    returnResponse: true,
+  ): Promise<Response>;
+  async _exec(
+    op: string,
+    payload: unknown,
+    returnResponse?: false,
+  ): Promise<Record<string, unknown>>;
+  async _exec(op: string, payload: unknown, returnResponse?: boolean) {
     const nextOptions = shiftOptionsOnce();
 
     const relayPassword = process.env.MONGODB_RELAY_PASSWORD;
@@ -278,6 +288,7 @@ class RelayCollection<TSchema extends Document = Document> {
     if (!this._cacheable.includes(op)) requestInit.cache = "no-store";
 
     const response = await fetch(url, requestInit);
+    if (returnResponse) return response;
 
     if (response.status === 200) {
       const text = await response.text();

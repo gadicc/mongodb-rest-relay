@@ -1,9 +1,14 @@
 import { URLSearchParams } from "url";
-import type { Db, Document as MongoDocument, Filter } from "mongodb";
+import type {
+  Db,
+  Document as MongoDocument,
+  Filter,
+  CursorStreamOptions,
+} from "mongodb";
 import type { FindOptions } from "../cursor";
 import { EJSON } from "bson";
 
-async function find(
+function find(
   db: Db,
   coll: string,
   filter: Filter<MongoDocument>,
@@ -14,7 +19,57 @@ async function find(
   if (opts.limit) cursor.limit(opts.limit);
   if (opts.skip) cursor.skip(opts.skip);
   if (opts.project) cursor.project(opts.project);
-  return await cursor.toArray();
+  return cursor;
+}
+
+async function findToArray(
+  db: Db,
+  coll: string,
+  filter: Filter<MongoDocument>,
+  opts: FindOptions,
+) {
+  return await find(db, coll, filter, opts).toArray();
+}
+
+function findStream(
+  db: Db,
+  coll: string,
+  filter: Filter<MongoDocument>,
+  findOptions: FindOptions,
+  cursorStreamOpts?: CursorStreamOptions,
+) {
+  const cursorStream = find(db, coll, filter, findOptions).stream(
+    cursorStreamOpts,
+  );
+
+  const bodyStream = new ReadableStream({
+    async start(controller) {
+      cursorStream.on("end", () => controller.close());
+    },
+
+    async pull(controller) {
+      cursorStream.on("readable", () => {
+        let doc;
+        while (null !== (doc = cursorStream.read())) {
+          controller.enqueue(EJSON.serialize(doc));
+        }
+      });
+    },
+  });
+
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // changed by cross-fetch and fucks up everything
+  // @ts-expect-error: ok
+  const Response: typeof Response = global.RealResponse;
+
+  const response = new Response(bodyStream, {
+    headers: { "Content-Type": "application/x-ndjson" },
+  });
+
+  if (response.body !== bodyStream)
+    throw new Error("Something is wrong with your Response implementation");
+
+  return response;
 }
 
 async function tryCatchResult(fn: () => unknown) {
@@ -68,11 +123,16 @@ export async function processDbRequest(
   }
 
   let result;
-  if (op === "find") {
+  if (op === "findStream") {
     const filter = data?.filter as unknown as Filter<MongoDocument>;
     const opts = (data?.opts as FindOptions) || {};
-    console.log("find", coll, filter, opts);
-    result = await tryCatchResult(() => find(db, coll, filter, opts));
+    console.log("findStream", coll, filter, opts);
+    return findStream(db, coll, filter, opts);
+  } else if (op === "findToArray") {
+    const filter = data?.filter as unknown as Filter<MongoDocument>;
+    const opts = (data?.opts as FindOptions) || {};
+    console.log("findToArray", coll, filter, opts);
+    result = await tryCatchResult(() => findToArray(db, coll, filter, opts));
   } else {
     const collection = db.collection(coll);
     if (op in collection) {

@@ -5,6 +5,10 @@ export default function makeRelay(db: Db, relayPassword?: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return async function expressRelay(req: Request, res: any) {
     const response = await processDbRequest(db, req, relayPassword);
+    if (!(response instanceof Response))
+      throw new Error(
+        "Streams not supported by express handler yet... let us know if you need this!",
+      );
 
     res.status(response.status);
     for (const [key, value] of response.headers.entries())
