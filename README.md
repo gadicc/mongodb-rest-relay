@@ -46,12 +46,14 @@ supported (see notes at the end of the README).
 
 ```js
 import { MongoClient } from "mongodb";
-import makeExpressRelay from "mongodb-rest-relay/lib/express";
+// There is also server/{nextServerless{App,Pages},vercelServerlessOther}
+import makeExpressRelay from "mongodb-rest-relay/lib/server/express";
 
 const MONGO_URL = process.env.MONGO_URL || "mongodb://127.0.0.1";
 const client = new MongoClient(MONGO_URL);
 
 export default makeExpressRelay((await client.connect()).db(/* dbName? */));
+// or next app router: export const POST = makeRelay.... with correct import.
 ```
 
 3. Set the `MONGODB_RELAY_PASSWORD` environment variable to the same value
