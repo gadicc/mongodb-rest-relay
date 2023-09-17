@@ -65,6 +65,7 @@ export default makeExpressRelay((await client.connect()).db(/* dbName? */));
 
   - `insertOne()`, `insertMany()`
   - `find()` - with `sort()`, `limit()`, `skip()`, `project()`.
+    - `toArray()`, `stream()` (yes! streaming!)
   - `updateOne()`, `updateMany()`
   - `deleteOne()`, `deleteMany()`
   - `countDocuments()`, `estimatedDocumentCount()`
@@ -153,6 +154,8 @@ Note:
 ## TODO
 
 - [x] ObjectID / Date support `:) - in next release!
+- [x] streaming!
+- [ ] aggregation - ask for it.
 - [ ] Instead of sending MONGODB_RELAY_PASSWORD, just use it to sign requests.
 - [x] Caching
   - [x] Global options
