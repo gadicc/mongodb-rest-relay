@@ -1,9 +1,8 @@
 // From https://raw.githubusercontent.com/mongodb/js-bson/main/src/utils/byte_utils.ts
 // commit 409c592524a6eec6a89eb96dee4b51e4f8adf5ae, changes marked with [mrr]
 
-// [mrr]
-// import { nodeJsByteUtils } from "./node_byte_utils";
-import { webByteUtils } from "bson/src/utils/web_byte_utils";
+// import { nodeJsByteUtils } from "./node_byte_utils"; [mrr]
+import { webByteUtils } from "./web_byte_utils"; // [mrr]
 
 /** @internal */
 export type ByteUtils = {

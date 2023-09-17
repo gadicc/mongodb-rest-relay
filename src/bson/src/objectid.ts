@@ -2,8 +2,9 @@
 // commit e2674c6c2940d81e5de5b6c9500391ce5b1a2649, changes marked with 'mrr'
 
 // [mrr] import from bson package
-import { BSONValue } from "bson/src/bson_value";
-import { BSONError } from "bson/src/error";
+// import { BSONValue } from "./src/bson_value";
+// import { BSONError } from "./src/error";
+import { BSONValue, BSONError } from "bson";
 
 // [mrr] this has nodejs dependencies
 // import { BSONDataView, ByteUtils } from './utils/byte_utils';

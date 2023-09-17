@@ -27,7 +27,7 @@ elastic scaling).
 +
 + // Optional: only if Mongo's ObjectId doesn't work in your edge environment.
 - import { ObjectId } from "mongodb" // "bson"
-+ import { ObjectId } from "mongodb-rest-relay/lib/bson"
++ import { ObjectId } from "mongodb-rest-relay"
 +
 + export const runtime = 'edge' // if relevant (e.g. on Vercel)
 
