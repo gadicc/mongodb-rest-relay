@@ -1,5 +1,8 @@
-// @ts-expect-error: ok
-global.RealResponse = global.Response;
+declare global {
+  // eslint-disable-next-line no-var
+  var RealResponse: typeof Response;
+}
+global.RealResponse = Response;
 
 import fetchMock, { enableFetchMocks } from "jest-fetch-mock";
 enableFetchMocks();
@@ -12,7 +15,6 @@ import makeRelay from "./express";
 import { processDbRequest } from "./server/common";
 import RelayMongoClient from "./client";
 import type { RelayDb } from "./database";
-import { Duplex } from "stream";
 
 process.env.MONGODB_RELAY_PASSWORD = "test";
 
@@ -85,8 +87,12 @@ describe("relay integration test", () => {
 
       if (req.url.match(/findStream/)) {
         return processDbRequest(remoteDb, req).then((response) => {
-          // @ts-expect-error: ok
-          if (!(response instanceof global.RealResponse))
+          if (
+            !(
+              response instanceof global.RealResponse ||
+              response instanceof Response
+            )
+          )
             throw new Error(
               "Expected a Response but got: " + JSON.stringify(response),
             );

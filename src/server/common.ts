@@ -59,8 +59,12 @@ function findStream(
 
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   // changed by cross-fetch and fucks up everything
-  // @ts-expect-error: ok
-  const Response: typeof Response = global.RealResponse;
+  const Response = (
+    "RealResponse" in global
+      ? global.RealResponse
+      : // @ts-expect-error: ok
+        global.Response
+  ) as typeof global.Response;
 
   const response = new Response(bodyStream, {
     headers: { "Content-Type": "application/x-ndjson" },
@@ -122,7 +126,7 @@ export async function processDbRequest(
     }
   }
 
-  let result;
+  let result: Awaited<ReturnType<typeof tryCatchResult>>;
   if (op === "findStream") {
     const filter = data?.filter as unknown as Filter<MongoDocument>;
     const opts = (data?.opts as FindOptions) || {};
@@ -146,9 +150,15 @@ export async function processDbRequest(
     }
   }
 
-  const response = new Response(EJSON.stringify(result), {
+  return result;
+}
+
+export function assertResponse(
+  result: Awaited<ReturnType<typeof tryCatchResult>> | Response,
+) {
+  if (result instanceof Response) return result;
+
+  return new Response(EJSON.stringify(result), {
     headers: { "Content-Type": "application/json" },
   });
-
-  return response;
 }
