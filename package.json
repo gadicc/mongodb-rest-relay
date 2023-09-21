@@ -67,7 +67,7 @@
     ]
   },
   "peerDependencies": {
-    "bson": "5.4.0",
+    "bson": "5.5.0",
     "mongodb": "5.8.1"
   }
 }
