@@ -26,6 +26,7 @@ elastic scaling).
 + const MONGO_URL = "http://localhost:3000/api/mongoRelay.ts"
 +
 + // Optional: only if Mongo's ObjectId doesn't work in your edge environment.
++ // Before this, try set `{ browser: { crypto: false }}` in your app's package.json
 - import { ObjectId } from "mongodb" // "bson"
 + import { ObjectId } from "mongodb-rest-relay"
 +
