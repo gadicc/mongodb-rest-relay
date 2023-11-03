@@ -1,10 +1,12 @@
 // Based on https://github.com/mongodb/js-bson/blob/main/src/objectid.ts
-// commit e2674c6c2940d81e5de5b6c9500391ce5b1a2649, changes marked with 'mrr'
+// commit 7802c66b2617dcc3ea7c64d58e33f403533794b4 (2023-10-16), changes marked 'mrr'
 
 // [mrr] import from bson package
 // import { BSONValue } from "./src/bson_value";
 // import { BSONError } from "./src/error";
 import { BSONValue, BSONError } from "bson";
+
+import { type InspectFn, defaultInspect } from "./parser/utils";
 
 // [mrr] this has nodejs dependencies
 // import { BSONDataView, ByteUtils } from './utils/byte_utils';
@@ -328,13 +330,9 @@ export class ObjectId extends BSONValue {
    * Converts to a string representation of this Id.
    *
    * @returns return the 24 character hex string representation.
-   * @internal
    */
-  [Symbol.for("nodejs.util.inspect.custom")](): string {
-    return this.inspect();
-  }
-
-  inspect(): string {
-    return `new ObjectId("${this.toHexString()}")`;
+  inspect(depth?: number, options?: unknown, inspect?: InspectFn): string {
+    inspect ??= defaultInspect;
+    return `new ObjectId(${inspect(this.toHexString(), options)})`;
   }
 }
