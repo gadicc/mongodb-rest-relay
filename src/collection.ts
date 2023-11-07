@@ -296,6 +296,9 @@ class RelayCollection<TSchema extends Document = Document> {
     }
 
     const text = await response.text();
+    console.error("HTTP " + response.status + ": " + text);
+    console.error("url", url);
+    console.error("requestInit", requestInit);
     throw new Error("HTTP " + response.status + ": " + text);
   }
 }
