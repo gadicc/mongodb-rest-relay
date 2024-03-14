@@ -121,6 +121,7 @@ describe("relay integration test", () => {
     // { acknowledged: true, insertedId: '64e77ac444f03d4af4d8ff4e' }
     result = await collection.insertOne({ a: 1 });
     expect(result.acknowledged).toBe(true);
+    const _id = result.insertedId;
 
     result = await collection
       .find({})
@@ -131,6 +132,16 @@ describe("relay integration test", () => {
       .toArray();
     expect(result.length).toBe(1);
     expect(result[0].a).toBe(1);
+
+    result = await collection.replaceOne({ _id }, { a: 2 });
+    expect(result.acknowledged).toBe(true);
+    expect(result.matchedCount).toBe(1);
+    expect(result.modifiedCount).toBe(1);
+    expect(result.upsertedCount).toBe(0);
+    expect(result.upsertedId).toBe(null);
+    result = await collection.findOne({ _id });
+    expect(result).not.toBeNull();
+    expect(result!.a).toBe(2);
   });
 
   it("countDocuments, estimatedDocumentCount", async () => {

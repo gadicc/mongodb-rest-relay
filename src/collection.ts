@@ -7,6 +7,9 @@ import type {
   FindOptions,
   WithId,
   FindCursor,
+  WithoutId,
+  ReplaceOptions,
+  UpdateResult,
 } from "mongodb";
 import { EJSON } from "bson";
 import RelayCursor from "./cursor";
@@ -226,6 +229,22 @@ class RelayCollection<TSchema extends Document = Document> {
   async updateMany(filter: Filter<TSchema>, update: unknown) {
     const data = await this._exec("updateMany", [filter, update]);
     return throwOrReturnAs<ReturnType<MongoCollection["updateMany"]>>(data);
+  }
+
+  /**
+   * Replace a document in a collection with another document
+   *
+   * @param filter - The filter used to select the document to replace
+   * @param replacement - The Document that replaces the matching document
+   * @param options - Optional settings for the command
+   */
+  async replaceOne(
+    filter: Filter<TSchema>,
+    replacement: WithoutId<TSchema>,
+    options?: ReplaceOptions,
+  ): Promise<UpdateResult<TSchema> | Document> {
+    const data = await this._exec("replaceOne", [filter, replacement, options]);
+    return throwOrReturnAs<ReturnType<MongoCollection["replaceOne"]>>(data);
   }
 
   /**
