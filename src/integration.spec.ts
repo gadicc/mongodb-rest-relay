@@ -142,6 +142,12 @@ describe("relay integration test", () => {
     result = await collection.findOne({ _id });
     expect(result).not.toBeNull();
     expect(result!.a).toBe(2);
+
+    result = await collection.bulkWrite([
+      { insertOne: { document: { a: 3 } } },
+    ]);
+    expect(result.insertedCount).toBe(1);
+    expect(result.insertedIds[0]).toBeInstanceOf(ObjectId);
   });
 
   it("countDocuments, estimatedDocumentCount", async () => {

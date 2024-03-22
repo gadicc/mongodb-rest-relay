@@ -69,6 +69,7 @@ export default makeExpressRelay((await client.connect()).db(/* dbName? */));
     - `toArray()`, `stream()` (yes! streaming!)
   - `updateOne()`, `updateMany()`
   - `replaceOne()`
+  - `bulkWrite()`
   - `deleteOne()`, `deleteMany()`
   - `countDocuments()`, `estimatedDocumentCount()`
   - Open an issue or submit a PR for more :)

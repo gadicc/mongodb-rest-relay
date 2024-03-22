@@ -10,6 +10,8 @@ import type {
   WithoutId,
   ReplaceOptions,
   UpdateResult,
+  AnyBulkWriteOperation,
+  BulkWriteOptions,
 } from "mongodb";
 import { EJSON } from "bson";
 import RelayCursor from "./cursor";
@@ -205,6 +207,34 @@ class RelayCollection<TSchema extends Document = Document> {
   async insertMany(docs: TSchema[]) {
     const data = await this._exec("insertMany", [docs]);
     return throwOrReturnAs<ReturnType<MongoCollection["insertMany"]>>(data);
+  }
+
+  /**
+   * Perform a bulkWrite operation without a fluent API
+   *
+   * Legal operation types are
+   * - `insertOne`
+   * - `replaceOne`
+   * - `updateOne`
+   * - `updateMany`
+   * - `deleteOne`
+   * - `deleteMany`
+   *
+   * If documents passed in do not contain the **_id** field,
+   * one will be added to each of the documents missing it by the driver, mutating the document. This behavior
+   * can be overridden by setting the **forceServerObjectId** flag.
+   *
+   * @param operations - Bulk operations to perform
+   * @param options - Optional settings for the command
+   * @throws MongoDriverError if operations is not an array
+   */
+  async bulkWrite(
+    operations: AnyBulkWriteOperation<TSchema>[],
+    options?: BulkWriteOptions,
+  ) {
+    // : Promise<BulkWriteResult>;
+    const data = await this._exec("bulkWrite", [operations, options]);
+    return throwOrReturnAs<ReturnType<MongoCollection["bulkWrite"]>>(data);
   }
 
   /**
