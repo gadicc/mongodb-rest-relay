@@ -202,6 +202,20 @@ describe("relay integration test", () => {
     expect(result.deletedCount).toBe(2);
   });
 
+  it("atomic operations", async () => {
+    let result;
+    const collection = localDb.collection("test_atomic");
+
+    result = await collection.insertOne({ a: 1 });
+    expect(result.acknowledged).toBe(true);
+
+    result = await collection.findOneAndUpdate({ a: 1 }, { $set: { a: 2 } });
+    expect(result!.a).toBe(1);
+
+    result = await collection.findOne({ a: 2 });
+    expect(result!.a).toBe(2);
+  });
+
   it("works with dates and object ids", async () => {
     const collection = localDb.collection("test_arson");
 

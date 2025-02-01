@@ -1,17 +1,19 @@
 import type {
+  AnyBulkWriteOperation,
+  BulkWriteOptions,
   Collection as MongoCollection,
   CountDocumentsOptions,
   Document,
   EstimatedDocumentCountOptions,
   Filter,
   FindOptions,
-  WithId,
-  FindCursor,
-  WithoutId,
+  FindOneAndUpdateOptions,
+  ModifyResult,
   ReplaceOptions,
+  UpdateFilter,
   UpdateResult,
-  AnyBulkWriteOperation,
-  BulkWriteOptions,
+  WithId,
+  WithoutId,
 } from "mongodb";
 import { EJSON } from "bson";
 import RelayCursor from "./cursor";
@@ -187,6 +189,51 @@ class RelayCollection<TSchema extends Document = Document> {
     const data = await this._exec("findOne", [filter]);
     type x = ReturnType<MongoCollection<TSchema>["findOne"]>;
     return throwOrReturnAs<WithId<TSchema> | null>(data);
+  }
+
+  /**
+   * Find a document and update it in one atomic operation. Requires a write lock for the duration of the operation.
+   *
+   * @param filter - The filter used to select the document to update
+   * @param update - Update operations to be performed on the document
+   * @param options - Optional settings for the command
+   */
+  findOneAndUpdate(
+    filter: Filter<TSchema>,
+    update: UpdateFilter<TSchema>,
+    options: FindOneAndUpdateOptions & {
+      includeResultMetadata: true;
+    },
+  ): Promise<ModifyResult<TSchema>>;
+  findOneAndUpdate(
+    filter: Filter<TSchema>,
+    update: UpdateFilter<TSchema>,
+    options: FindOneAndUpdateOptions & {
+      includeResultMetadata: false;
+    },
+  ): Promise<WithId<TSchema> | null>;
+  findOneAndUpdate(
+    filter: Filter<TSchema>,
+    update: UpdateFilter<TSchema>,
+    options: FindOneAndUpdateOptions,
+  ): Promise<WithId<TSchema> | null>;
+  findOneAndUpdate(
+    filter: Filter<TSchema>,
+    update: UpdateFilter<TSchema>,
+  ): Promise<WithId<TSchema> | null>;
+  async findOneAndUpdate(
+    filter: Filter<TSchema>,
+    update: UpdateFilter<TSchema>,
+    options?: FindOneAndUpdateOptions,
+  ): Promise<unknown> {
+    const data = await this._exec("findOneAndUpdate", [
+      filter,
+      update,
+      options,
+    ]);
+    return throwOrReturnAs<ReturnType<MongoCollection["findOneAndUpdate"]>>(
+      data,
+    );
   }
 
   /**

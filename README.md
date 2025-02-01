@@ -67,7 +67,7 @@ export default makeExpressRelay((await client.connect()).db(/* dbName? */));
   - `insertOne()`, `insertMany()`
   - `find()` - with `sort()`, `limit()`, `skip()`, `project()`.
     - `toArray()`, `stream()` (yes! streaming!)
-  - `updateOne()`, `updateMany()`
+  - `updateOne()`, `updateMany()`, `findOneAndUpdate()` (atomic)
   - `replaceOne()`
   - `bulkWrite()`
   - `deleteOne()`, `deleteMany()`
