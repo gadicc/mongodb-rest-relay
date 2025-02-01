@@ -72,7 +72,13 @@ function throwOrReturnAs<T>(data: Record<string, unknown>) {
 class RelayCollection<TSchema extends Document = Document> {
   db: RelayDb;
   name: string;
-  _cacheable = ["find", "findOne", "estimatedDocumentCount", "countDocuments"];
+  _cacheable = [
+    "find",
+    "findOne",
+    "findToArray",
+    "estimatedDocumentCount",
+    "countDocuments",
+  ];
 
   constructor(db: RelayDb, name: string) {
     this.db = db;
